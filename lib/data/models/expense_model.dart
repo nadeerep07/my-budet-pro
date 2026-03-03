@@ -1,0 +1,62 @@
+import 'package:hive/hive.dart';
+import '../../domain/entities/expense_entity.dart';
+
+part 'expense_model.g.dart';
+
+@HiveType(typeId: 1)
+class ExpenseModel extends HiveObject {
+  @HiveField(0)
+  final String id;
+
+  @HiveField(1)
+  final String categoryId;
+
+  @HiveField(2)
+  final double amount;
+
+  @HiveField(3)
+  final String description;
+
+  @HiveField(4)
+  final DateTime date;
+
+  @HiveField(5)
+  final String accountId;
+
+  @HiveField(6)
+  final bool isFromSavings;
+
+  ExpenseModel({
+    required this.id,
+    required this.categoryId,
+    required this.amount,
+    required this.description,
+    required this.date,
+    required this.accountId,
+    this.isFromSavings = false,
+  });
+
+  factory ExpenseModel.fromEntity(ExpenseEntity entity) {
+    return ExpenseModel(
+      id: entity.id,
+      categoryId: entity.categoryId,
+      amount: entity.amount,
+      description: entity.description,
+      date: entity.date,
+      accountId: entity.accountId,
+      isFromSavings: entity.isFromSavings,
+    );
+  }
+
+  ExpenseEntity toEntity() {
+    return ExpenseEntity(
+      id: id,
+      categoryId: categoryId,
+      amount: amount,
+      description: description,
+      date: date,
+      accountId: accountId,
+      isFromSavings: isFromSavings,
+    );
+  }
+}

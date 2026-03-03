@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "147298740710",
+    "project_id": "mybudegtpro",
+    "storage_bucket": "mybudegtpro.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:147298740710:android:efd7b0d08fa551027b8e27",
+        "android_client_info": {
+          "package_name": "com.plustudios.my_budget_pro"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "147298740710-a9d76hqt8sshff328lp7jnvi0rl3168u.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC1_F5vmsv-cmFsK9MDicEm12QqpDS95eQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "147298740710-a9d76hqt8sshff328lp7jnvi0rl3168u.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
