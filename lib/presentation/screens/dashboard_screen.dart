@@ -5,6 +5,8 @@ import '../theme/app_theme.dart';
 import '../viewmodels/accounts_view_model.dart';
 import '../viewmodels/budget_view_model.dart';
 import '../viewmodels/expense_view_model.dart';
+import '../viewmodels/month_view_model.dart';
+import 'package:intl/intl.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -14,17 +16,35 @@ class DashboardScreen extends StatelessWidget {
     final expenseVM = context.watch<ExpenseViewModel>();
     final budgetVM = context.watch<BudgetViewModel>();
     final accountsVM = context.watch<AccountsViewModel>();
+    final monthVM = context.watch<MonthViewModel>();
 
-    final double totalBudget = budgetVM.categories.fold(0, (sum, cat) => sum + cat.monthlyBudget);
-    final double totalSpent = expenseVM.getTotalSpentInMonth(DateTime.now());
+    final now = monthVM.currentMonth;
+
+    final double totalBudget = budgetVM.categories.fold(
+      0,
+      (sum, cat) => sum + cat.monthlyBudget,
+    );
+    final double totalSpent = expenseVM.getTotalSpentInMonth(now);
     final double remaining = totalBudget - totalSpent;
     final double totalBalance = accountsVM.totalBalance;
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundWhite,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('MyBudgetPro'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.calendar_month),
+            onPressed: () async {
+              final selectedDate = await showMonthPicker(
+                context,
+                monthVM.currentMonth,
+              );
+              if (selectedDate != null) {
+                monthVM.changeMonth(selectedDate);
+              }
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             onPressed: () => Navigator.pushNamed(context, AppRoutes.setting),
@@ -37,7 +57,13 @@ class DashboardScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildSummaryCard(context, totalBudget, totalSpent, remaining),
+              _buildSummaryCard(
+                context,
+                totalBudget,
+                totalSpent,
+                remaining,
+                now,
+              ),
               const SizedBox(height: 16),
               _buildAccountsOverview(context, totalBalance),
               const SizedBox(height: 16),
@@ -53,25 +79,48 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSummaryCard(BuildContext context, double total, double spent, double remaining) {
+  Widget _buildSummaryCard(
+    BuildContext context,
+    double total,
+    double spent,
+    double remaining,
+    DateTime currentMonth,
+  ) {
     return IOSCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'This Month',
+            DateFormat('MMMM yyyy').format(currentMonth),
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textGray,
-                ),
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildColumn('Budget', '₹${total.toStringAsFixed(0)}', AppTheme.textBlack),
-              _buildColumn('Spent', '₹${spent.toStringAsFixed(0)}', AppTheme.errorRed),
-              _buildColumn('Remaining', '₹${remaining.toStringAsFixed(0)}', remaining >= 0 ? AppTheme.successGreen : AppTheme.errorRed),
+              _buildColumn(
+                context,
+                'Budget',
+                '₹${total.toStringAsFixed(0)}',
+                Theme.of(context).colorScheme.onSurface,
+              ),
+              _buildColumn(
+                context,
+                'Spent',
+                '₹${spent.toStringAsFixed(0)}',
+                Theme.of(context).colorScheme.error,
+              ),
+              _buildColumn(
+                context,
+                'Remaining',
+                '₹${remaining.toStringAsFixed(0)}',
+                remaining >= 0
+                    ? Colors.green
+                    : Theme.of(context).colorScheme.error,
+              ),
             ],
           ),
         ],
@@ -79,11 +128,22 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildColumn(String label, String value, Color valueColor) {
+  Widget _buildColumn(
+    BuildContext context,
+    String label,
+    String value,
+    Color valueColor,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: AppTheme.textGray, fontSize: 13)),
+        Text(
+          label,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            fontSize: 13,
+          ),
+        ),
         const SizedBox(height: 4),
         Text(
           value,
@@ -92,7 +152,7 @@ class DashboardScreen extends StatelessWidget {
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
-        )
+        ),
       ],
     );
   }
@@ -105,24 +165,37 @@ class DashboardScreen extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Total Balance', style: TextStyle(color: AppTheme.textGray, fontSize: 13)),
+              Text(
+                'Total Balance',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 13,
+                ),
+              ),
               const SizedBox(height: 4),
               Text(
                 '₹${totalBalance.toStringAsFixed(0)}',
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ],
           ),
           ElevatedButton(
             onPressed: () => Navigator.pushNamed(context, AppRoutes.accounts),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryBlue.withOpacity(0.1),
-              foregroundColor: AppTheme.primaryBlue,
+              backgroundColor: Theme.of(
+                context,
+              ).colorScheme.primary.withOpacity(0.1),
+              foregroundColor: Theme.of(context).colorScheme.primary,
               elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             child: const Text('View All'),
-          )
+          ),
         ],
       ),
     );
@@ -139,39 +212,85 @@ class DashboardScreen extends StatelessWidget {
         crossAxisSpacing: 16,
         childAspectRatio: 1.5,
         children: [
-          _buildActionCard(context, 'Budget', Icons.pie_chart_outline, AppRoutes.budget),
-          _buildActionCard(context, 'Analytics', Icons.bar_chart, AppRoutes.analytics),
-          _buildActionCard(context, 'Savings', Icons.savings_outlined, AppRoutes.savings),
-          _buildActionCard(context, 'Accounts', Icons.account_balance_wallet_outlined, AppRoutes.accounts),
+          _buildActionCard(
+            context,
+            'Budget',
+            Icons.pie_chart_outline,
+            AppRoutes.budget,
+          ),
+          _buildActionCard(
+            context,
+            'Analytics',
+            Icons.bar_chart,
+            AppRoutes.analytics,
+          ),
+          _buildActionCard(
+            context,
+            'Savings',
+            Icons.savings_outlined,
+            AppRoutes.savings,
+          ),
+          _buildActionCard(
+            context,
+            'All Expenses',
+            Icons.list_alt,
+            AppRoutes.allExpenses,
+          ),
+          _buildActionCard(
+            context,
+            'Accounts',
+            Icons.account_balance_wallet_outlined,
+            AppRoutes.accounts,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildActionCard(BuildContext context, String title, IconData icon, String route) {
+  Widget _buildActionCard(
+    BuildContext context,
+    String title,
+    IconData icon,
+    String route,
+  ) {
     return GestureDetector(
       onTap: () => Navigator.pushNamed(context, route),
       child: Container(
         decoration: BoxDecoration(
-          color: AppTheme.surfaceWhite,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.03),
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.transparent
+                  : Colors.black.withOpacity(0.03),
               blurRadius: 10,
               offset: const Offset(0, 4),
-            )
+            ),
           ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: AppTheme.primaryBlue, size: 32),
+            Icon(icon, color: Theme.of(context).colorScheme.primary, size: 32),
             const SizedBox(height: 8),
             Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
           ],
         ),
       ),
+    );
+  }
+
+  Future<DateTime?> showMonthPicker(
+    BuildContext context,
+    DateTime initialDate,
+  ) async {
+    return showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+      initialDatePickerMode: DatePickerMode.year,
     );
   }
 }

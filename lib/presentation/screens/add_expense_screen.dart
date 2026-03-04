@@ -8,7 +8,8 @@ import '../viewmodels/expense_view_model.dart';
 import '../viewmodels/savings_view_model.dart';
 
 class AddExpenseScreen extends StatefulWidget {
-  const AddExpenseScreen({super.key});
+  final ExpenseEntity? existingExpense;
+  const AddExpenseScreen({super.key, this.existingExpense});
 
   @override
   State<AddExpenseScreen> createState() => _AddExpenseScreenState();
@@ -17,11 +18,25 @@ class AddExpenseScreen extends StatefulWidget {
 class _AddExpenseScreenState extends State<AddExpenseScreen> {
   final _amountController = TextEditingController();
   final _descController = TextEditingController();
-  
+
   String? _selectedCategory;
   String? _selectedAccount;
   bool _isFromSavings = false;
   DateTime _selectedDate = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.existingExpense != null) {
+      final e = widget.existingExpense!;
+      _amountController.text = e.amount.toString();
+      _descController.text = e.description;
+      _selectedCategory = e.categoryId;
+      _isFromSavings = e.isFromSavings;
+      _selectedAccount = e.isFromSavings ? null : e.accountId;
+      _selectedDate = e.date;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +45,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Add Expense'),
+        title: Text(
+          widget.existingExpense == null ? 'Add Expense' : 'Edit Expense',
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -42,7 +59,10 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                   TextField(
                     controller: _amountController,
                     keyboardType: TextInputType.number,
-                    style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                    ),
                     decoration: const InputDecoration(
                       hintText: '₹0',
                       border: InputBorder.none,
@@ -79,18 +99,22 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(labelText: 'Payment Method'),
+                    decoration: const InputDecoration(
+                      labelText: 'Payment Method',
+                    ),
                     initialValue: _selectedAccount,
                     items: accountsVM.accounts.map((a) {
                       return DropdownMenuItem(value: a.id, child: Text(a.name));
                     }).toList(),
-                    onChanged: _isFromSavings ? null : (val) => setState(() => _selectedAccount = val),
+                    onChanged: _isFromSavings
+                        ? null
+                        : (val) => setState(() => _selectedAccount = val),
                   ),
                   const SizedBox(height: 16),
                   SwitchListTile(
                     title: const Text('Paid from Savings'),
                     value: _isFromSavings,
-                    activeThumbColor: AppTheme.primaryBlue,
+                    activeThumbColor: Theme.of(context).colorScheme.primary,
                     onChanged: (val) {
                       setState(() {
                         _isFromSavings = val;
@@ -103,7 +127,10 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                     title: const Text('Date'),
                     trailing: Text(
                       '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-                      style: const TextStyle(color: AppTheme.primaryBlue, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     onTap: () async {
                       final date = await showDatePicker(
@@ -124,12 +151,22 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               height: 50,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryBlue,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 onPressed: _saveExpense,
-                child: const Text('Save Expense', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                child: Text(
+                  widget.existingExpense == null
+                      ? 'Save Expense'
+                      : 'Update Expense',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
           ],
@@ -140,12 +177,55 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
   void _saveExpense() async {
     final amount = double.tryParse(_amountController.text);
-    if (amount == null || amount <= 0) return;
-    if (_selectedCategory == null) return;
-    if (!_isFromSavings && _selectedAccount == null) return;
+    if (amount == null || amount <= 0) {
+      _showError('Please enter a valid amount.');
+      return;
+    }
+    if (_selectedCategory == null) {
+      _showError('Please select a category.');
+      return;
+    }
+    if (!_isFromSavings && _selectedAccount == null) {
+      _showError('Please select a payment method.');
+      return;
+    }
+
+    final accountsVM = context.read<AccountsViewModel>();
+    final savingsVM = context.read<SavingsViewModel>();
+
+    // Validate Balance constraint
+    // We get current balance and add back the old amount if editing, then subtract the new amount
+    if (_isFromSavings) {
+      final currentBal = savingsVM.savings?.currentBalance ?? 0;
+      final oldAmount =
+          (widget.existingExpense != null &&
+              widget.existingExpense!.isFromSavings)
+          ? widget.existingExpense!.amount
+          : 0;
+      if (currentBal + oldAmount - amount < 0) {
+        _showError('Insufficient savings balance.');
+        return;
+      }
+    } else {
+      final acc = accountsVM.accounts.firstWhere(
+        (a) => a.id == _selectedAccount,
+      );
+      final oldAmount =
+          (widget.existingExpense != null &&
+              !widget.existingExpense!.isFromSavings &&
+              widget.existingExpense!.accountId == _selectedAccount)
+          ? widget.existingExpense!.amount
+          : 0;
+      if (acc.initialBalance + oldAmount - amount < 0) {
+        _showError('Insufficient account balance.');
+        return;
+      }
+    }
 
     final expense = ExpenseEntity(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id:
+          widget.existingExpense?.id ??
+          DateTime.now().millisecondsSinceEpoch.toString(),
       categoryId: _selectedCategory!,
       amount: amount,
       description: _descController.text,
@@ -154,14 +234,50 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       isFromSavings: _isFromSavings,
     );
 
-    await context.read<ExpenseViewModel>().addExpense(expense);
-    
-    if (_isFromSavings) {
-      await context.read<SavingsViewModel>().deductFromSavings(amount);
+    if (widget.existingExpense != null) {
+      // Reverse previous transaction
+      final old = widget.existingExpense!;
+      if (old.isFromSavings) {
+        await context.read<SavingsViewModel>().addToSavings(old.amount);
+      } else {
+        await context.read<AccountsViewModel>().updateAccountBalance(
+          old.accountId,
+          old.amount,
+        );
+      }
+      // Apply new transaction
+      await context.read<ExpenseViewModel>().updateExpense(expense);
+      if (_isFromSavings) {
+        await context.read<SavingsViewModel>().deductFromSavings(amount);
+      } else {
+        await context.read<AccountsViewModel>().updateAccountBalance(
+          _selectedAccount!,
+          -amount,
+        );
+      }
     } else {
-      await context.read<AccountsViewModel>().updateAccountBalance(_selectedAccount!, -amount);
+      await context.read<ExpenseViewModel>().addExpense(expense);
+      if (_isFromSavings) {
+        await context.read<SavingsViewModel>().deductFromSavings(amount);
+      } else {
+        await context.read<AccountsViewModel>().updateAccountBalance(
+          _selectedAccount!,
+          -amount,
+        );
+      }
     }
 
     if (mounted) Navigator.pop(context);
+  }
+
+  void _showError(String msg) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(msg),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
   }
 }

@@ -6,25 +6,25 @@ import '../models/savings_model.dart';
 
 abstract class LocalDataSource {
   Future<void> init();
-  
+
   // Categories
   Future<List<CategoryModel>> getCategories();
   Future<void> addCategory(CategoryModel category);
   Future<void> updateCategory(CategoryModel category);
   Future<void> deleteCategory(String id);
-  
+
   // Expenses
   Future<List<ExpenseModel>> getExpenses();
   Future<void> addExpense(ExpenseModel expense);
   Future<void> updateExpense(ExpenseModel expense);
   Future<void> deleteExpense(String id);
-  
+
   // Accounts
   Future<List<AccountModel>> getAccounts();
   Future<void> addAccount(AccountModel account);
   Future<void> updateAccount(AccountModel account);
   Future<void> deleteAccount(String id);
-  
+
   // Savings
   Future<SavingsModel?> getSavings();
   Future<void> updateSavings(SavingsModel savings);
@@ -42,6 +42,95 @@ class HiveDataSourceImpl implements LocalDataSource {
     _expenseBox = await Hive.openBox<ExpenseModel>('expenses');
     _accountBox = await Hive.openBox<AccountModel>('accounts');
     _savingsBox = await Hive.openBox<SavingsModel>('savings');
+
+    await _migrateLegacyCategories();
+  }
+
+  Future<void> _migrateLegacyCategories() async {
+    final settingsBox = await Hive.openBox('settingsBox');
+    final bool hasMigrated = settingsBox.get(
+      'migration_legacy_categories',
+      defaultValue: false,
+    );
+
+    if (hasMigrated) return; // Already ran
+
+    final allCategories = _categoryBox.values.toList();
+    final legacyCategories = allCategories
+        .where((c) => c.month == null || c.year == null)
+        .toList();
+
+    if (legacyCategories.isEmpty) {
+      // Nothing to migrate, mark as done
+      await settingsBox.put('migration_legacy_categories', true);
+      return;
+    }
+
+    final allExpenses = _expenseBox.values.toList();
+
+    // Find all unique (month, year) combos from expenses
+    final Map<String, DateTime> uniqueMonths = {};
+    for (var expense in allExpenses) {
+      final key = '${expense.date.year}_${expense.date.month}';
+      uniqueMonths[key] = DateTime(expense.date.year, expense.date.month);
+    }
+
+    // Always include current month just in case
+    final now = DateTime.now();
+    uniqueMonths['${now.year}_${now.month}'] = DateTime(now.year, now.month);
+
+    // For every unique month and legacy category, clone the category into that month
+    final Map<String, String> oldIdToNewIdMap = {}; // oldId_month_year -> newId
+
+    for (var date in uniqueMonths.values) {
+      for (var legacyCat in legacyCategories) {
+        final newId = '${legacyCat.id}_${date.month}_${date.year}_migrated';
+
+        final newCat = CategoryModel(
+          id: newId,
+          name: legacyCat.name,
+          monthlyBudget: legacyCat.monthlyBudget,
+          isCustom: legacyCat.isCustom,
+          month: date.month,
+          year: date.year,
+        );
+
+        await _categoryBox.put(newId, newCat);
+        oldIdToNewIdMap['${legacyCat.id}_${date.month}_${date.year}'] = newId;
+      }
+    }
+
+    // Update all expenses to point to the newly cloned monthly categories
+    for (var expense in allExpenses) {
+      // If the expense uses a legacy category, redirect it to the cloned monthly one
+      final isLegacyCategory = legacyCategories.any(
+        (c) => c.id == expense.categoryId,
+      );
+      if (isLegacyCategory) {
+        final newCategoryId =
+            oldIdToNewIdMap['${expense.categoryId}_${expense.date.month}_${expense.date.year}'];
+        if (newCategoryId != null) {
+          final updatedExpense = ExpenseModel(
+            id: expense.id,
+            categoryId: newCategoryId,
+            amount: expense.amount,
+            description: expense.description,
+            date: expense.date,
+            accountId: expense.accountId,
+            isFromSavings: expense.isFromSavings,
+          );
+          await _expenseBox.put(updatedExpense.id, updatedExpense);
+        }
+      }
+    }
+
+    // Clean up original legacy categories
+    for (var legacyCat in legacyCategories) {
+      await _categoryBox.delete(legacyCat.id);
+    }
+
+    // Migration complete
+    await settingsBox.put('migration_legacy_categories', true);
   }
 
   // --- Categories ---

@@ -5,9 +5,8 @@ import 'package:my_budget_pro/presentation/screens/analytics_screen.dart';
 import 'package:my_budget_pro/presentation/screens/budget_screen.dart';
 import 'package:my_budget_pro/presentation/screens/savings_screen.dart';
 import 'package:my_budget_pro/presentation/screens/settings_screen.dart';
+import 'package:my_budget_pro/presentation/screens/all_expenses_screen.dart';
 import '../../presentation/screens/dashboard_screen.dart';
-
-
 
 class AppRoutes {
   static const String dashboard = '/';
@@ -17,6 +16,7 @@ class AppRoutes {
   static const String analytics = '/analytics';
   static const String setting = '/settings';
   static const String savings = '/savings';
+  static const String allExpenses = '/allExpenses';
 
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -32,6 +32,8 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const AnalyticsScreen());
       case savings:
         return MaterialPageRoute(builder: (_) => const SavingsScreen());
+      case allExpenses:
+        return MaterialPageRoute(builder: (_) => const AllExpensesScreen());
       case setting:
         return MaterialPageRoute(builder: (_) => const SettingsScreen());
       default:

@@ -17,11 +17,19 @@ class CategoryModel extends HiveObject {
   @HiveField(3)
   final bool isCustom;
 
+  @HiveField(4)
+  final int? month;
+
+  @HiveField(5)
+  final int? year;
+
   CategoryModel({
     required this.id,
     required this.name,
     required this.monthlyBudget,
     this.isCustom = true,
+    this.month,
+    this.year,
   });
 
   factory CategoryModel.fromEntity(CategoryEntity entity) {
@@ -30,6 +38,8 @@ class CategoryModel extends HiveObject {
       name: entity.name,
       monthlyBudget: entity.monthlyBudget,
       isCustom: entity.isCustom,
+      month: entity.month,
+      year: entity.year,
     );
   }
 
@@ -39,6 +49,8 @@ class CategoryModel extends HiveObject {
       name: name,
       monthlyBudget: monthlyBudget,
       isCustom: isCustom,
+      month: month,
+      year: year,
     );
   }
 }
