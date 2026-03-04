@@ -10,10 +10,12 @@ import 'data/models/account_model.dart';
 import 'data/models/category_model.dart';
 import 'data/models/expense_model.dart';
 import 'data/models/savings_model.dart';
+import 'data/models/income_model.dart';
 import 'data/repositories/account_repository_impl.dart';
 import 'data/repositories/category_repository_impl.dart';
 import 'data/repositories/expense_repository_impl.dart';
 import 'data/repositories/savings_repository_impl.dart';
+import 'data/repositories/income_repository_impl.dart';
 import 'presentation/viewmodels/accounts_view_model.dart';
 import 'presentation/viewmodels/auth_view_model.dart';
 import 'presentation/viewmodels/budget_view_model.dart';
@@ -21,6 +23,10 @@ import 'presentation/viewmodels/expense_view_model.dart';
 import 'presentation/viewmodels/savings_view_model.dart';
 import 'presentation/viewmodels/month_view_model.dart';
 import 'presentation/viewmodels/theme_view_model.dart';
+import 'presentation/viewmodels/income_view_model.dart';
+import 'presentation/viewmodels/mileage_view_model.dart';
+import 'data/models/mileage_entry_model.dart';
+import 'data/repositories/mileage_repository_impl.dart';
 import 'presentation/theme/light_theme.dart';
 import 'presentation/theme/dark_theme.dart';
 
@@ -36,6 +42,8 @@ void main() async {
   Hive.registerAdapter(ExpenseModelAdapter());
   Hive.registerAdapter(AccountModelAdapter());
   Hive.registerAdapter(SavingsModelAdapter());
+  Hive.registerAdapter(IncomeModelAdapter());
+  Hive.registerAdapter(MileageEntryModelAdapter());
   await Hive.openBox('settingsBox'); // Initialize settingsBox
 
   // Data Sources & Repositories
@@ -46,6 +54,10 @@ void main() async {
   final expenseRepository = ExpenseRepositoryImpl(localDataSource);
   final accountRepository = AccountRepositoryImpl(localDataSource);
   final savingsRepository = SavingsRepositoryImpl(localDataSource);
+  final incomeRepository = IncomeRepositoryImpl(localDataSource);
+  final mileageRepository = MileageRepositoryImpl(
+    localDataSource: localDataSource,
+  );
 
   runApp(
     MultiProvider(
@@ -68,8 +80,26 @@ void main() async {
         ChangeNotifierProvider(
           create: (_) => SavingsViewModel(savingsRepository)..loadSavings(),
         ),
+        ChangeNotifierProvider(
+          create: (_) => IncomeViewModel(incomeRepository)..loadIncomes(),
+        ),
         ChangeNotifierProvider(create: (_) => AuthViewModel()),
         ChangeNotifierProvider(create: (_) => ThemeViewModel()),
+        ChangeNotifierProxyProvider2<
+          ExpenseViewModel,
+          AccountsViewModel,
+          MileageViewModel
+        >(
+          create: (context) => MileageViewModel(
+            mileageRepository,
+            context.read<ExpenseViewModel>(),
+            context.read<AccountsViewModel>(),
+          )..loadEntries(),
+          update: (context, expenseVM, accountsVM, previous) =>
+              (previous ??
+                    MileageViewModel(mileageRepository, expenseVM, accountsVM))
+                ..loadEntries(),
+        ),
       ],
       child: const MyBudgetApp(),
     ),

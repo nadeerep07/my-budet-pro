@@ -12,27 +12,23 @@ class AccountModel extends HiveObject {
   final String name;
 
   @HiveField(2)
-  double initialBalance;
+  double openingBalance;
 
   AccountModel({
     required this.id,
     required this.name,
-    required this.initialBalance,
+    required this.openingBalance,
   });
 
   factory AccountModel.fromEntity(AccountEntity entity) {
     return AccountModel(
       id: entity.id,
       name: entity.name,
-      initialBalance: entity.initialBalance,
+      openingBalance: entity.openingBalance,
     );
   }
 
   AccountEntity toEntity() {
-    return AccountEntity(
-      id: id,
-      name: name,
-      initialBalance: initialBalance,
-    );
+    return AccountEntity(id: id, name: name, openingBalance: openingBalance);
   }
 }

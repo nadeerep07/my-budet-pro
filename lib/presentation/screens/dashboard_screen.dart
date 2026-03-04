@@ -5,6 +5,7 @@ import '../theme/app_theme.dart';
 import '../viewmodels/accounts_view_model.dart';
 import '../viewmodels/budget_view_model.dart';
 import '../viewmodels/expense_view_model.dart';
+import '../viewmodels/income_view_model.dart';
 import '../viewmodels/month_view_model.dart';
 import 'package:intl/intl.dart';
 
@@ -16,6 +17,7 @@ class DashboardScreen extends StatelessWidget {
     final expenseVM = context.watch<ExpenseViewModel>();
     final budgetVM = context.watch<BudgetViewModel>();
     final accountsVM = context.watch<AccountsViewModel>();
+    final incomeVM = context.watch<IncomeViewModel>();
     final monthVM = context.watch<MonthViewModel>();
 
     final now = monthVM.currentMonth;
@@ -27,6 +29,7 @@ class DashboardScreen extends StatelessWidget {
     final double totalSpent = expenseVM.getTotalSpentInMonth(now);
     final double remaining = totalBudget - totalSpent;
     final double totalBalance = accountsVM.totalBalance;
+    final double totalIncome = incomeVM.getTotalIncomeForMonth(now);
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -60,6 +63,7 @@ class DashboardScreen extends StatelessWidget {
               _buildSummaryCard(
                 context,
                 totalBudget,
+                totalIncome,
                 totalSpent,
                 remaining,
                 now,
@@ -81,7 +85,8 @@ class DashboardScreen extends StatelessWidget {
 
   Widget _buildSummaryCard(
     BuildContext context,
-    double total,
+    double totalBudget,
+    double totalIncome,
     double spent,
     double remaining,
     DateTime currentMonth,
@@ -103,9 +108,9 @@ class DashboardScreen extends StatelessWidget {
             children: [
               _buildColumn(
                 context,
-                'Budget',
-                '₹${total.toStringAsFixed(0)}',
-                Theme.of(context).colorScheme.onSurface,
+                'Income',
+                '₹${totalIncome.toStringAsFixed(0)}',
+                Colors.green,
               ),
               _buildColumn(
                 context,
@@ -118,7 +123,7 @@ class DashboardScreen extends StatelessWidget {
                 'Remaining',
                 '₹${remaining.toStringAsFixed(0)}',
                 remaining >= 0
-                    ? Colors.green
+                    ? Theme.of(context).colorScheme.onSurface
                     : Theme.of(context).colorScheme.error,
               ),
             ],
@@ -194,7 +199,7 @@ class DashboardScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: const Text('View All'),
+            child: const Text('View Accounts'),
           ),
         ],
       ),
@@ -212,6 +217,12 @@ class DashboardScreen extends StatelessWidget {
         crossAxisSpacing: 16,
         childAspectRatio: 1.5,
         children: [
+          _buildActionCard(
+            context,
+            'Income',
+            Icons.account_balance_wallet,
+            AppRoutes.income,
+          ),
           _buildActionCard(
             context,
             'Budget',
@@ -238,9 +249,9 @@ class DashboardScreen extends StatelessWidget {
           ),
           _buildActionCard(
             context,
-            'Accounts',
-            Icons.account_balance_wallet_outlined,
-            AppRoutes.accounts,
+            'Mileage',
+            Icons.directions_bike,
+            AppRoutes.mileage,
           ),
         ],
       ),

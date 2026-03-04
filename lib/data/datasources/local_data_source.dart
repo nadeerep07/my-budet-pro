@@ -3,6 +3,8 @@ import '../models/category_model.dart';
 import '../models/expense_model.dart';
 import '../models/account_model.dart';
 import '../models/savings_model.dart';
+import '../models/income_model.dart';
+import '../models/mileage_entry_model.dart';
 
 abstract class LocalDataSource {
   Future<void> init();
@@ -25,9 +27,21 @@ abstract class LocalDataSource {
   Future<void> updateAccount(AccountModel account);
   Future<void> deleteAccount(String id);
 
+  // Incomes
+  Future<List<IncomeModel>> getIncomes();
+  Future<void> addIncome(IncomeModel income);
+  Future<void> updateIncome(IncomeModel income);
+  Future<void> deleteIncome(String id);
+
   // Savings
   Future<SavingsModel?> getSavings();
   Future<void> updateSavings(SavingsModel savings);
+
+  // Mileage
+  Future<List<MileageEntryModel>> getMileageEntries();
+  Future<void> addMileageEntry(MileageEntryModel entry);
+  Future<void> updateMileageEntry(MileageEntryModel entry);
+  Future<void> deleteMileageEntry(String id);
 }
 
 class HiveDataSourceImpl implements LocalDataSource {
@@ -35,15 +49,73 @@ class HiveDataSourceImpl implements LocalDataSource {
   late Box<ExpenseModel> _expenseBox;
   late Box<AccountModel> _accountBox;
   late Box<SavingsModel> _savingsBox;
+  late Box<IncomeModel> _incomeBox;
+  late Box<MileageEntryModel> _mileageBox;
 
   @override
   Future<void> init() async {
     _categoryBox = await Hive.openBox<CategoryModel>('categories');
     _expenseBox = await Hive.openBox<ExpenseModel>('expenses');
     _accountBox = await Hive.openBox<AccountModel>('accounts');
-    _savingsBox = await Hive.openBox<SavingsModel>('savings');
+    _savingsBox = await Hive.openBox<SavingsModel>('savingsBox');
+    _incomeBox = await Hive.openBox<IncomeModel>('incomeBox');
+    _mileageBox = await Hive.openBox<MileageEntryModel>('mileageBox');
 
+    // Initialize default categories if box is empty
     await _migrateLegacyCategories();
+    await _migrateAccountsAndIncomes();
+  }
+
+  Future<void> _migrateAccountsAndIncomes() async {
+    final settingsBox = await Hive.openBox('settingsBox');
+    final bool hasMigrated = settingsBox.get(
+      'migration_accounts_incomes_v1',
+      defaultValue: false,
+    );
+
+    if (hasMigrated) return; // Already migrated
+
+    // 1. Setup Default Accounts if not exists
+    if (_accountBox.isEmpty) {
+      final defaultAccounts = [
+        AccountModel(id: 'sbi', name: 'SBI', openingBalance: 0),
+        AccountModel(id: 'hdfc', name: 'HDFC', openingBalance: 0),
+        AccountModel(
+          id: 'airtel',
+          name: 'Airtel Payment Bank',
+          openingBalance: 0,
+        ),
+        AccountModel(
+          id: 'supermoney',
+          name: 'Super Money Credit Card',
+          openingBalance: 0,
+        ),
+        AccountModel(id: 'cash', name: 'Cash', openingBalance: 0),
+      ];
+      for (var acc in defaultAccounts) {
+        await _accountBox.put(acc.id, acc);
+      }
+    }
+
+    // 2. Migrate existing expenses to 'cash' account if they don't have one
+    final allExpenses = _expenseBox.values.toList();
+    for (var expense in allExpenses) {
+      // In Dart/Hive, adding a new field might make it null or empty string initially
+      if (expense.accountId.isEmpty) {
+        final updatedExpense = ExpenseModel(
+          id: expense.id,
+          categoryId: expense.categoryId,
+          amount: expense.amount,
+          description: expense.description,
+          date: expense.date,
+          accountId: 'cash', // Default to Cash
+          isFromSavings: expense.isFromSavings,
+        );
+        await _expenseBox.put(updatedExpense.id, updatedExpense);
+      }
+    }
+
+    await settingsBox.put('migration_accounts_incomes_v1', true);
   }
 
   Future<void> _migrateLegacyCategories() async {
@@ -196,6 +268,27 @@ class HiveDataSourceImpl implements LocalDataSource {
     await _accountBox.delete(id);
   }
 
+  // --- Incomes ---
+  @override
+  Future<List<IncomeModel>> getIncomes() async {
+    return _incomeBox.values.toList();
+  }
+
+  @override
+  Future<void> addIncome(IncomeModel income) async {
+    await _incomeBox.put(income.id, income);
+  }
+
+  @override
+  Future<void> updateIncome(IncomeModel income) async {
+    await _incomeBox.put(income.id, income);
+  }
+
+  @override
+  Future<void> deleteIncome(String id) async {
+    await _incomeBox.delete(id);
+  }
+
   // --- Savings ---
   @override
   Future<SavingsModel?> getSavings() async {
@@ -206,5 +299,27 @@ class HiveDataSourceImpl implements LocalDataSource {
   @override
   Future<void> updateSavings(SavingsModel savings) async {
     await _savingsBox.put('main_savings', savings);
+  }
+
+  // --- Mileage ---
+  @override
+  Future<List<MileageEntryModel>> getMileageEntries() async {
+    return _mileageBox.values.toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+  }
+
+  @override
+  Future<void> addMileageEntry(MileageEntryModel entry) async {
+    await _mileageBox.put(entry.id, entry);
+  }
+
+  @override
+  Future<void> updateMileageEntry(MileageEntryModel entry) async {
+    await _mileageBox.put(entry.id, entry);
+  }
+
+  @override
+  Future<void> deleteMileageEntry(String id) async {
+    await _mileageBox.delete(id);
   }
 }

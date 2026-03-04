@@ -216,7 +216,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               widget.existingExpense!.accountId == _selectedAccount)
           ? widget.existingExpense!.amount
           : 0;
-      if (acc.initialBalance + oldAmount - amount < 0) {
+      if (acc.openingBalance + oldAmount - amount < 0) {
         _showError('Insufficient account balance.');
         return;
       }
