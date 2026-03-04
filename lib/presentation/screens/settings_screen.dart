@@ -5,9 +5,37 @@ import '../theme/app_theme.dart';
 import '../viewmodels/auth_view_model.dart';
 import '../viewmodels/expense_view_model.dart';
 import '../viewmodels/theme_view_model.dart';
+import '../../core/services/local_auth_service.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../data/datasources/remote_data_source.dart';
+import '../../data/models/expense_model.dart';
+import '../../data/models/category_model.dart';
+import '../../data/models/account_model.dart';
+import '../../data/models/savings_model.dart';
+import '../../data/models/income_model.dart';
+import '../../data/models/mileage_entry_model.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  late Box _settingsBox;
+  bool _isAppLockEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _settingsBox = Hive.box('settingsBox');
+    _isAppLockEnabled = _settingsBox.get(
+      'app_lock_enabled',
+      defaultValue: false,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -148,15 +176,25 @@ class SettingsScreen extends StatelessWidget {
                     ),
                     title: const Text('Export all data to CSV'),
                     onTap: () async {
-                      await ExportService.exportToCsv(expenseVM.expenses);
+                      final success = await ExportService.exportToCsv(
+                        expenseVM.expenses,
+                      );
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Exported to documents folder successfully!',
+                        if (success) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('CSV Export ready!'),
+                              backgroundColor: Colors.green,
                             ),
-                          ),
-                        );
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Failed to export CSV.'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
                       }
                     },
                   ),
@@ -175,14 +213,46 @@ class SettingsScreen extends StatelessWidget {
                   const SizedBox(height: 16),
                   SwitchListTile(
                     title: const Text('Enable PIN / Biometric Lock'),
-                    value: false, // Placeholder for local_auth setup
-                    onChanged: (val) {
-                      // Implement local auth logic here
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('PIN Lock to be fully integrated.'),
-                        ),
-                      );
+                    value: _isAppLockEnabled,
+                    onChanged: (val) async {
+                      if (val) {
+                        // User wants to enable app lock, authenticate first
+                        final success = await LocalAuthService.authenticate();
+                        if (success) {
+                          _settingsBox.put('app_lock_enabled', true);
+                          setState(() {
+                            _isAppLockEnabled = true;
+                          });
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('App Lock enabled successfully.'),
+                              ),
+                            );
+                          }
+                        } else {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Authentication failed. Cannot enable App Lock.',
+                                ),
+                              ),
+                            );
+                          }
+                        }
+                      } else {
+                        // User wants to disable app lock
+                        _settingsBox.put('app_lock_enabled', false);
+                        setState(() {
+                          _isAppLockEnabled = false;
+                        });
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('App Lock disabled.')),
+                          );
+                        }
+                      }
                     },
                   ),
                 ],
@@ -194,10 +264,65 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  void _backupData(BuildContext context) {
+  Future<void> _backupData(BuildContext context) async {
+    final authVM = context.read<AuthViewModel>();
+    if (authVM.currentUser == null) return;
+
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Simulating Cloud Backup...')));
+    ).showSnackBar(const SnackBar(content: Text('Backing up data...')));
+
+    try {
+      final remoteDataSource = FirebaseDataSource(FirebaseFirestore.instance);
+
+      // Access boxes to convert models
+      final categoriesBox = await Hive.openBox<CategoryModel>('categories');
+      final expensesBox = await Hive.openBox<ExpenseModel>('expenses');
+      final accountsBox = await Hive.openBox<AccountModel>('accounts');
+      final savingsBox = await Hive.openBox<SavingsModel>('savings');
+      final incomesBox = await Hive.openBox<IncomeModel>('incomes');
+      final mileageBox = await Hive.openBox<MileageEntryModel>('mileage');
+
+      final categoriesJson = categoriesBox.values
+          .map((e) => e.toJson())
+          .toList();
+      final expensesJson = expensesBox.values.map((e) => e.toJson()).toList();
+      final accountsJson = accountsBox.values.map((e) => e.toJson()).toList();
+      final savingsJson = savingsBox.values.isNotEmpty
+          ? savingsBox.values.first.toJson()
+          : null;
+      final incomesJson = incomesBox.values.map((e) => e.toJson()).toList();
+      final mileageJson = mileageBox.values.map((e) => e.toJson()).toList();
+
+      await remoteDataSource.backupData(
+        userId: authVM.currentUser!.id,
+        categories: categoriesJson,
+        expenses: expensesJson,
+        accounts: accountsJson,
+        savings: savingsJson,
+        incomes: incomesJson,
+        mileages: mileageJson,
+      );
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Backup completed successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint("Backup error: $e");
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Backup failed. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _restoreData(BuildContext context) {

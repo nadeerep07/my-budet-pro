@@ -83,4 +83,20 @@ class MileageEntryModel extends HiveObject {
       linkedExpenseId: linkedExpenseId,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'date': date.toIso8601String(),
+      'odometerReading': odometerReading,
+      'petrolLitres': petrolLitres,
+      'pricePerLitre': pricePerLitre,
+      'totalCost': totalCost,
+      'distanceTravelled': distanceTravelled,
+      'mileage': mileage,
+      'paymentMethodId': paymentMethodId,
+      'notes': notes,
+      'linkedExpenseId': linkedExpenseId,
+    };
+  }
 }

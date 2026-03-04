@@ -30,6 +30,8 @@ import 'data/repositories/mileage_repository_impl.dart';
 import 'presentation/theme/light_theme.dart';
 import 'presentation/theme/dark_theme.dart';
 
+import 'presentation/widgets/app_lock_wrapper.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -101,7 +103,7 @@ void main() async {
                 ..loadEntries(),
         ),
       ],
-      child: const MyBudgetApp(),
+      child: const AppLockWrapper(child: MyBudgetApp()),
     ),
   );
 }

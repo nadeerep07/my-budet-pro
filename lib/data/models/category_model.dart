@@ -53,4 +53,15 @@ class CategoryModel extends HiveObject {
       year: year,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'monthlyBudget': monthlyBudget,
+      'isCustom': isCustom,
+      'month': month,
+      'year': year,
+    };
+  }
 }

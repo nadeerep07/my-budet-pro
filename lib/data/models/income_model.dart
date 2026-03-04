@@ -53,4 +53,15 @@ class IncomeModel extends HiveObject {
       accountId: accountId,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'source': source,
+      'description': description,
+      'amount': amount,
+      'date': date.toIso8601String(),
+      'accountId': accountId,
+    };
+  }
 }

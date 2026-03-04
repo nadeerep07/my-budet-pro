@@ -31,4 +31,8 @@ class AccountModel extends HiveObject {
   AccountEntity toEntity() {
     return AccountEntity(id: id, name: name, openingBalance: openingBalance);
   }
+
+  Map<String, dynamic> toJson() {
+    return {'id': id, 'name': name, 'openingBalance': openingBalance};
+  }
 }

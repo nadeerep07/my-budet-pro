@@ -65,4 +65,17 @@ class ExpenseModel extends HiveObject {
       source: source,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'categoryId': categoryId,
+      'amount': amount,
+      'description': description,
+      'date': date.toIso8601String(),
+      'accountId': accountId,
+      'isFromSavings': isFromSavings,
+      'source': source,
+    };
+  }
 }
