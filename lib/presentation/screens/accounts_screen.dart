@@ -51,7 +51,7 @@ class AccountsScreen extends StatelessWidget {
               (acc) => _buildAccountItem(
                 context,
                 acc.name,
-                acc.initialBalance,
+                acc.openingBalance,
                 acc.id,
               ),
             ),

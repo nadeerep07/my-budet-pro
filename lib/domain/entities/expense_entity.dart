@@ -8,6 +8,7 @@ class ExpenseEntity extends Equatable {
   final DateTime date;
   final String accountId; // Corresponds to Account or Payment Method (e.g. SBI)
   final bool isFromSavings;
+  final String? source;
 
   const ExpenseEntity({
     required this.id,
@@ -17,8 +18,18 @@ class ExpenseEntity extends Equatable {
     required this.date,
     required this.accountId,
     this.isFromSavings = false,
+    this.source,
   });
 
   @override
-  List<Object?> get props => [id, categoryId, amount, description, date, accountId, isFromSavings];
+  List<Object?> get props => [
+    id,
+    categoryId,
+    amount,
+    description,
+    date,
+    accountId,
+    isFromSavings,
+    source,
+  ];
 }

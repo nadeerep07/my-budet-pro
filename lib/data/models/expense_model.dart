@@ -26,6 +26,9 @@ class ExpenseModel extends HiveObject {
   @HiveField(6)
   final bool isFromSavings;
 
+  @HiveField(7)
+  final String? source;
+
   ExpenseModel({
     required this.id,
     required this.categoryId,
@@ -34,6 +37,7 @@ class ExpenseModel extends HiveObject {
     required this.date,
     required this.accountId,
     this.isFromSavings = false,
+    this.source,
   });
 
   factory ExpenseModel.fromEntity(ExpenseEntity entity) {
@@ -45,6 +49,7 @@ class ExpenseModel extends HiveObject {
       date: entity.date,
       accountId: entity.accountId,
       isFromSavings: entity.isFromSavings,
+      source: entity.source,
     );
   }
 
@@ -57,6 +62,20 @@ class ExpenseModel extends HiveObject {
       date: date,
       accountId: accountId,
       isFromSavings: isFromSavings,
+      source: source,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'categoryId': categoryId,
+      'amount': amount,
+      'description': description,
+      'date': date.toIso8601String(),
+      'accountId': accountId,
+      'isFromSavings': isFromSavings,
+      'source': source,
+    };
   }
 }

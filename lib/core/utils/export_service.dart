@@ -1,10 +1,11 @@
 import 'dart:io';
 import 'package:csv/csv.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../domain/entities/expense_entity.dart';
 
 class ExportService {
-  static Future<void> exportToCsv(List<ExpenseEntity> expenses) async {
+  static Future<bool> exportToCsv(List<ExpenseEntity> expenses) async {
     List<List<dynamic>> rows = [];
 
     rows.add([
@@ -14,7 +15,7 @@ class ExportService {
       "Description",
       "Amount",
       "Account",
-      "Is From Savings"
+      "Is From Savings",
     ]);
 
     for (var exp in expenses) {
@@ -29,13 +30,25 @@ class ExportService {
       ]);
     }
 
-    final csvData = ListToCsvConverter().convert(rows);
+    try {
+      final csvData = const ListToCsvConverter().convert(rows);
 
-    final directory = await getApplicationDocumentsDirectory();
-    final file = File(
-      '${directory.path}/mybudgetpro_export_${DateTime.now().millisecondsSinceEpoch}.csv',
-    );
+      final directory = await getApplicationDocumentsDirectory();
+      final filePath =
+          '${directory.path}/mybudgetpro_export_${DateTime.now().millisecondsSinceEpoch}.csv';
+      final file = File(filePath);
 
-    await file.writeAsString(csvData);
+      await file.writeAsString(csvData);
+
+      // Trigger the share sheet
+      final result = await Share.shareXFiles([
+        XFile(filePath),
+      ], text: 'Expenses CSV Export from MyBudgetPro');
+
+      return result.status == ShareResultStatus.success ||
+          result.status == ShareResultStatus.dismissed;
+    } catch (e) {
+      return false; // Error occurred
+    }
   }
 }

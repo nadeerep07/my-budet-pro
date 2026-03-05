@@ -35,4 +35,8 @@ class SavingsModel extends HiveObject {
       totalDebited: totalDebited,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {'id': id, 'totalAdded': totalAdded, 'totalDebited': totalDebited};
+  }
 }

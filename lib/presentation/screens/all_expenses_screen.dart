@@ -195,7 +195,7 @@ class _AllExpensesScreenState extends State<AllExpensesScreen> {
                               children: [
                                 Text(
                                   DateFormat(
-                                    'dd MMM, hh:mm a',
+                                    'dd MMM, yyyy - hh:mm a',
                                   ).format(expense.date),
                                   style: TextStyle(
                                     fontSize: 12,
