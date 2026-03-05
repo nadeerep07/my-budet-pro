@@ -118,7 +118,9 @@ class SavingsScreen extends StatelessWidget {
                         ? 'Savings Expense'
                         : exp.description,
                   ),
-                  subtitle: Text(DateFormat('dd MMM yyyy').format(exp.date)),
+                  subtitle: Text(
+                    DateFormat('dd MMM yyyy - hh:mm a').format(exp.date),
+                  ),
                   trailing: Text(
                     '-₹${exp.amount.toStringAsFixed(0)}',
                     style: TextStyle(

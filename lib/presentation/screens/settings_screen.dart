@@ -15,6 +15,10 @@ import '../../data/models/account_model.dart';
 import '../../data/models/savings_model.dart';
 import '../../data/models/income_model.dart';
 import '../../data/models/mileage_entry_model.dart';
+import '../../data/models/transfer_model.dart';
+import '../../data/models/goal_model.dart';
+import '../../data/models/service_model.dart';
+import '../../data/models/diet_model.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -282,6 +286,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final savingsBox = await Hive.openBox<SavingsModel>('savings');
       final incomesBox = await Hive.openBox<IncomeModel>('incomes');
       final mileageBox = await Hive.openBox<MileageEntryModel>('mileage');
+      final transferBox = await Hive.openBox<TransferModel>('transferBox');
+      final goalBox = await Hive.openBox<GoalModel>('goalBox');
+      final serviceBox = await Hive.openBox<ServiceModel>('serviceBox');
+      final dietProfileBox = await Hive.openBox<DietProfileModel>(
+        'dietProfileBox',
+      );
+      final mealEntryBox = await Hive.openBox<MealEntryModel>('mealEntryBox');
 
       final categoriesJson = categoriesBox.values
           .map((e) => e.toJson())
@@ -293,6 +304,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
           : null;
       final incomesJson = incomesBox.values.map((e) => e.toJson()).toList();
       final mileageJson = mileageBox.values.map((e) => e.toJson()).toList();
+      final transfersJson = transferBox.values.map((e) => e.toJson()).toList();
+      final goalsJson = goalBox.values.map((e) => e.toJson()).toList();
+      final servicesJson = serviceBox.values.map((e) => e.toJson()).toList();
+      final dietProfileJson = dietProfileBox.values.isNotEmpty
+          ? dietProfileBox.values.first.toJson()
+          : null;
+      final mealEntriesJson = mealEntryBox.values
+          .map((e) => e.toJson())
+          .toList();
 
       await remoteDataSource.backupData(
         userId: authVM.currentUser!.id,
@@ -302,6 +322,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         savings: savingsJson,
         incomes: incomesJson,
         mileages: mileageJson,
+        transfers: transfersJson,
+        goals: goalsJson,
+        services: servicesJson,
+        dietProfile: dietProfileJson,
+        mealEntries: mealEntriesJson,
       );
 
       if (context.mounted) {

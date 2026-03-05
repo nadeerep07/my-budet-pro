@@ -253,6 +253,30 @@ class DashboardScreen extends StatelessWidget {
             Icons.directions_bike,
             AppRoutes.mileage,
           ),
+          _buildActionCard(
+            context,
+            'Transfer',
+            Icons.swap_horiz,
+            AppRoutes.transfer,
+          ),
+          _buildActionCard(
+            context,
+            'Goals',
+            Icons.flag_outlined,
+            AppRoutes.goals,
+          ),
+          _buildActionCard(
+            context,
+            'EMI Tracker',
+            Icons.credit_card,
+            AppRoutes.emiCalculator,
+          ),
+          _buildActionCard(
+            context,
+            'Diet AI',
+            Icons.restaurant_menu,
+            AppRoutes.dietDashboard,
+          ),
         ],
       ),
     );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart' as intl;
 import 'package:provider/provider.dart';
 import '../../domain/entities/expense_entity.dart';
 import '../theme/app_theme.dart';
@@ -126,7 +127,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                   ListTile(
                     title: const Text('Date'),
                     trailing: Text(
-                      '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
+                      intl.DateFormat(
+                        'MMM dd, yyyy - hh:mm a',
+                      ).format(_selectedDate),
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.primary,
                         fontWeight: FontWeight.bold,
@@ -139,7 +142,24 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                         firstDate: DateTime(2000),
                         lastDate: DateTime.now(),
                       );
-                      if (date != null) setState(() => _selectedDate = date);
+                      if (date != null) {
+                        if (!mounted) return;
+                        final time = await showTimePicker(
+                          context: context,
+                          initialTime: TimeOfDay.fromDateTime(_selectedDate),
+                        );
+                        if (time != null) {
+                          setState(() {
+                            _selectedDate = DateTime(
+                              date.year,
+                              date.month,
+                              date.day,
+                              time.hour,
+                              time.minute,
+                            );
+                          });
+                        }
+                      }
                     },
                   ),
                 ],

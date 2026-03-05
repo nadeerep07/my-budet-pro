@@ -5,6 +5,11 @@ import '../models/account_model.dart';
 import '../models/savings_model.dart';
 import '../models/income_model.dart';
 import '../models/mileage_entry_model.dart';
+import '../models/transfer_model.dart';
+import '../models/goal_model.dart';
+import '../models/service_model.dart';
+import '../models/diet_model.dart';
+import '../models/emi_tracker_model.dart';
 
 abstract class LocalDataSource {
   Future<void> init();
@@ -42,6 +47,37 @@ abstract class LocalDataSource {
   Future<void> addMileageEntry(MileageEntryModel entry);
   Future<void> updateMileageEntry(MileageEntryModel entry);
   Future<void> deleteMileageEntry(String id);
+
+  // Transfers
+  Future<List<TransferModel>> getTransfers();
+  Future<void> addTransfer(TransferModel transfer);
+  Future<void> updateTransfer(TransferModel transfer);
+  Future<void> deleteTransfer(String id);
+
+  // Goals
+  Future<List<GoalModel>> getGoals();
+  Future<void> addGoal(GoalModel goal);
+  Future<void> updateGoal(GoalModel goal);
+  Future<void> deleteGoal(String id);
+
+  // Services
+  Future<List<ServiceModel>> getServices();
+  Future<void> addService(ServiceModel service);
+  Future<void> updateService(ServiceModel service);
+  Future<void> deleteService(String id);
+
+  // Diet
+  Future<DietProfileModel?> getDietProfile();
+  Future<void> saveDietProfile(DietProfileModel profile);
+  Future<List<MealEntryModel>> getMealEntries();
+  Future<void> addMealEntry(MealEntryModel entry);
+  Future<void> deleteMealEntry(String id);
+
+  // EMI Tracker
+  Future<List<EmiTrackerModel>> getEmis();
+  Future<void> addEmi(EmiTrackerModel emi);
+  Future<void> updateEmi(EmiTrackerModel emi);
+  Future<void> deleteEmi(String id);
 }
 
 class HiveDataSourceImpl implements LocalDataSource {
@@ -51,6 +87,12 @@ class HiveDataSourceImpl implements LocalDataSource {
   late Box<SavingsModel> _savingsBox;
   late Box<IncomeModel> _incomeBox;
   late Box<MileageEntryModel> _mileageBox;
+  late Box<TransferModel> _transferBox;
+  late Box<GoalModel> _goalBox;
+  late Box<ServiceModel> _serviceBox;
+  late Box<DietProfileModel> _dietProfileBox;
+  late Box<MealEntryModel> _mealEntryBox;
+  late Box<EmiTrackerModel> _emiTrackerBox;
 
   @override
   Future<void> init() async {
@@ -60,6 +102,12 @@ class HiveDataSourceImpl implements LocalDataSource {
     _savingsBox = await Hive.openBox<SavingsModel>('savingsBox');
     _incomeBox = await Hive.openBox<IncomeModel>('incomeBox');
     _mileageBox = await Hive.openBox<MileageEntryModel>('mileageBox');
+    _transferBox = await Hive.openBox<TransferModel>('transferBox');
+    _goalBox = await Hive.openBox<GoalModel>('goalBox');
+    _serviceBox = await Hive.openBox<ServiceModel>('serviceBox');
+    _dietProfileBox = await Hive.openBox<DietProfileModel>('dietProfileBox');
+    _mealEntryBox = await Hive.openBox<MealEntryModel>('mealEntryBox');
+    _emiTrackerBox = await Hive.openBox<EmiTrackerModel>('emiTrackerBox');
 
     // Initialize default categories if box is empty
     await _migrateLegacyCategories();
@@ -321,5 +369,119 @@ class HiveDataSourceImpl implements LocalDataSource {
   @override
   Future<void> deleteMileageEntry(String id) async {
     await _mileageBox.delete(id);
+  }
+
+  // --- Transfers ---
+  @override
+  Future<List<TransferModel>> getTransfers() async {
+    return _transferBox.values.toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+  }
+
+  @override
+  Future<void> addTransfer(TransferModel transfer) async {
+    await _transferBox.put(transfer.id, transfer);
+  }
+
+  @override
+  Future<void> updateTransfer(TransferModel transfer) async {
+    await _transferBox.put(transfer.id, transfer);
+  }
+
+  @override
+  Future<void> deleteTransfer(String id) async {
+    await _transferBox.delete(id);
+  }
+
+  // --- Goals ---
+  @override
+  Future<List<GoalModel>> getGoals() async {
+    return _goalBox.values.toList();
+  }
+
+  @override
+  Future<void> addGoal(GoalModel goal) async {
+    await _goalBox.put(goal.id, goal);
+  }
+
+  @override
+  Future<void> updateGoal(GoalModel goal) async {
+    await _goalBox.put(goal.id, goal);
+  }
+
+  @override
+  Future<void> deleteGoal(String id) async {
+    await _goalBox.delete(id);
+  }
+
+  // --- Services ---
+  @override
+  Future<List<ServiceModel>> getServices() async {
+    return _serviceBox.values.toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+  }
+
+  @override
+  Future<void> addService(ServiceModel service) async {
+    await _serviceBox.put(service.id, service);
+  }
+
+  @override
+  Future<void> updateService(ServiceModel service) async {
+    await _serviceBox.put(service.id, service);
+  }
+
+  @override
+  Future<void> deleteService(String id) async {
+    await _serviceBox.delete(id);
+  }
+
+  // --- Diet ---
+  @override
+  Future<DietProfileModel?> getDietProfile() async {
+    if (_dietProfileBox.isEmpty) return null;
+    return _dietProfileBox.get('profile');
+  }
+
+  @override
+  Future<void> saveDietProfile(DietProfileModel profile) async {
+    await _dietProfileBox.put('profile', profile);
+  }
+
+  @override
+  Future<List<MealEntryModel>> getMealEntries() async {
+    return _mealEntryBox.values.toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+  }
+
+  @override
+  Future<void> addMealEntry(MealEntryModel entry) async {
+    await _mealEntryBox.put(entry.id, entry);
+  }
+
+  @override
+  Future<void> deleteMealEntry(String id) async {
+    await _mealEntryBox.delete(id);
+  }
+
+  // --- EMI Tracker ---
+  @override
+  Future<List<EmiTrackerModel>> getEmis() async {
+    return _emiTrackerBox.values.toList();
+  }
+
+  @override
+  Future<void> addEmi(EmiTrackerModel emi) async {
+    await _emiTrackerBox.put(emi.id, emi);
+  }
+
+  @override
+  Future<void> updateEmi(EmiTrackerModel emi) async {
+    await _emiTrackerBox.put(emi.id, emi);
+  }
+
+  @override
+  Future<void> deleteEmi(String id) async {
+    await _emiTrackerBox.delete(id);
   }
 }

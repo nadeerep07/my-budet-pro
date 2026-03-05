@@ -14,6 +14,11 @@ class FirebaseDataSource {
     required Map<String, dynamic>? savings,
     required List<Map<String, dynamic>> incomes,
     required List<Map<String, dynamic>> mileages,
+    required List<Map<String, dynamic>> transfers,
+    required List<Map<String, dynamic>> goals,
+    required List<Map<String, dynamic>> services,
+    required Map<String, dynamic>? dietProfile,
+    required List<Map<String, dynamic>> mealEntries,
   }) async {
     final docRef = firestore.collection('users').doc(userId);
     await docRef.set({
@@ -24,6 +29,11 @@ class FirebaseDataSource {
       'savings': savings,
       'incomes': incomes,
       'mileages': mileages,
+      'transfers': transfers,
+      'goals': goals,
+      'services': services,
+      'dietProfile': dietProfile,
+      'mealEntries': mealEntries,
     });
   }
 
