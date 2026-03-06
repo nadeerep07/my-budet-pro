@@ -1,16 +1,48 @@
-# my_budget_pro
+# OrbitLife
 
-A new Flutter project.
+**OrbitLife** is a personal life-management and finance tracking app built with Flutter.  
+It helps users manage their money, goals, health, and daily life activities in one place.
 
-## Getting Started
+The goal of OrbitLife is to provide a simple and powerful system to track finances, plan savings, monitor investments, and manage personal responsibilities.
 
-This project is a starting point for a Flutter application.
+---
 
-A few resources to get you started if this is your first Flutter project:
+## Features
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+### Finance Management
+- Budget Tracking
+- Expense & Income Tracking
+- Financial Goals with AI Recommendations
+- EMI & Loan Tracker
+- Investment Tracker (SIP, Stocks, Assets)
+- Borrow & Lend Tracker
+- Savings Tracking
+- Account Transfers
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### Smart Tools
+- AI Financial Insights
+- EMI Calculator
+- Notification Reminders for payments & due dates
+
+### Life Management
+- Diet & Nutrition Tracker
+- Service Tracker (maintenance reminders)
+- Mileage Tracker
+
+---
+
+## Tech Stack
+
+- **Flutter**
+- **Dart**
+- **Hive (Local Database)**
+- **Provider (State Management)**
+- **AI Integration (Groq / LLM)**
+- **Flutter Local Notifications**
+- **SharePlus**
+
+---
+
+## Architecture
+
+The project follows **Clean Architecture with MVVM pattern**.
